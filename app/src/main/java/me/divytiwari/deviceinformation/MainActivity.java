@@ -13,6 +13,8 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.StatFs;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -31,10 +33,13 @@ import android.widget.Toast;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Scanner;
 import java.util.TimeZone;
 
 public class MainActivity extends AppCompatActivity {
@@ -214,6 +219,45 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public static String getAvailableInternalMemorySize() {
+        File path = Environment.getDataDirectory();
+        StatFs stat = new StatFs(path.getPath());
+        long blockSize = stat.getBlockSizeLong();
+        long availableBlocks = stat.getAvailableBlocksLong();
+        return formatSize(availableBlocks * blockSize);
+    }
+
+    public static String getTotalInternalMemorySize() {
+        File path = Environment.getDataDirectory();
+        StatFs stat = new StatFs(path.getPath());
+        long blockSize = stat.getBlockSizeLong();
+        long totalBlocks = stat.getBlockCountLong();
+        return formatSize(totalBlocks * blockSize);
+    }
+
+    public static String formatSize(long size) {
+        String suffix = null;
+
+        if (size >= 1024) {
+            suffix = "KB";
+            size /= 1024;
+            if (size >= 1024) {
+                suffix = "MB";
+                size /= 1024;
+            }
+        }
+        StringBuilder resultBuffer = new StringBuilder(Long.toString(size));
+
+        int commaOffset = resultBuffer.length() - 3;
+        while (commaOffset > 0) {
+            resultBuffer.insert(commaOffset, ',');
+            commaOffset -= 3;
+        }
+
+        if (suffix != null) resultBuffer.append(suffix);
+        return resultBuffer.toString();
+    }
+
     private String getScreenResolution() {
         DisplayMetrics dm = new DisplayMetrics();
         Display display = getWindowManager().getDefaultDisplay();
@@ -230,6 +274,48 @@ public class MainActivity extends AppCompatActivity {
         int mHeightPixels = realSize.y;
 
         return String.valueOf(mHeightPixels) + "x" + String.valueOf(mWidthPixels);
+    }
+
+    private String readCPUinfo(int code)
+    {
+        String filename;
+        switch (code) {
+            case 1:
+                filename = "/proc/cpuinfo";
+                break;
+            case 2:
+                filename = "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq";
+                break;
+            case 3:
+                filename = "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq";
+                break;
+            default:
+                return null;
+        }
+        try {
+            Scanner scanner = new Scanner(new File(filename));
+            while (scanner.hasNextLine()) {
+                String[] val = scanner.nextLine().split(": ");
+                switch (code){
+                    case 1:
+                        if (val.length > 1){
+                            if (val[0].trim().equals("CPU implementer"))
+                                return val[1].trim();
+                        }
+                        break;
+                    case 2:
+                        if (val.length == 1)
+                            return val[0].trim();
+                    case 3:
+                        if (val.length == 1)
+                            return val[0].trim();
+                }
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return "";
+
     }
 
     private double getScreenSize() {
@@ -278,6 +364,7 @@ public class MainActivity extends AppCompatActivity {
         device_info.put("sdk", Build.VERSION.SDK_INT);
         device_info.put("os_version", Build.VERSION.RELEASE);
         device_info.put("brand", Build.BRAND);
+        device_info.put("product", Build.PRODUCT);
         // TODO Round off
         device_info.put("screen_size", getScreenSize());
         device_info.put("mcc", mcc);
@@ -292,7 +379,22 @@ public class MainActivity extends AppCompatActivity {
         device_info.put("hardware", Build.HARDWARE);
         // TODO use this method for all other display
         device_info.put("dpi", this.getResources().getDisplayMetrics().densityDpi);
+        device_info.put("device_type", Build.PRODUCT);
+        device_info.put("device", Build.DEVICE);
+        device_info.put("serial", Build.SERIAL);
+        device_info.put("cpu_arch", readCPUinfo(1));
 
+        JSONObject cpu_freq = new JSONObject();
+        cpu_freq.put("min", readCPUinfo(2));
+        cpu_freq.put("max", readCPUinfo(3));
+        device_info.put("cpu_frequency", cpu_freq);
+
+        JSONObject internal_memory_json = new JSONObject();
+        internal_memory_json.put("available", getAvailableInternalMemorySize());
+        internal_memory_json.put("shown", getTotalInternalMemorySize());
+        device_info.put("internal_memory", internal_memory_json);
+
+        device_info.put("mainboard",  Build.BOARD);
 
         JSONObject ram_json = new JSONObject();
         ram_json.put("available", "HI");
@@ -300,52 +402,31 @@ public class MainActivity extends AppCompatActivity {
         device_info.put("ram", ram_json);
 
         device_info.put("bluetooth", "Somedata");
-        device_info.put("device", "Somedata");
         device_info.put("private_ip", "Somedata");
-        device_info.put("device_type", "Somedata");
         device_info.put("timezone", "Somedata");
-        device_info.put("serial", Build.SERIAL);
         device_info.put("android_id", "Somedata");
-        device_info.put("cpu_arch", "Somedata");
         device_info.put("network", "Somedata");
         device_info.put("display", "Somedata");
         device_info.put("User-Agent", "Somedata");
 
-        JSONObject cpu_freq = new JSONObject();
-        cpu_freq.put("max", "sj");
-        cpu_freq.put("min", "sj");
-        device_info.put("cpu_frequency", cpu_freq);
-
         JSONObject gpu_json = new JSONObject();
-        cpu_freq.put("version", "sj");
-        cpu_freq.put("vendor", "sj");
-        cpu_freq.put("name", "sj");
-        cpu_freq.put("opengl_version", "sj");
+        gpu_json.put("version", "sj");
+        gpu_json.put("vendor", "sj");
+        gpu_json.put("name", "sj");
+        gpu_json.put("opengl_version", "sj");
         device_info.put("gpu", gpu_json);
+
         device_info.put("mac", wInfo.getMacAddress());
         device_info.put("build", "");
-
         device_info.put("adid", "");
         device_info.put("imei", "");
         device_info.put("local_tz", TimeZone.getDefault().toString());
-
-        device_info.put("product", "");
-
         device_info.put("name", "");
-        // TODO Wrong mainboard
-        device_info.put("mainboard",  Build.BOARD);
-
         device_info.put("local_timezone", "");
         device_info.put("cpu", "");
         device_info.put("processor", "");
 
-        JSONObject internal_memory_json = new JSONObject();
-        cpu_freq.put("available", "sj");
-        cpu_freq.put("shown", "sj");
-        device_info.put("internal_memory", internal_memory_json);
-
         return device_info;
-
     }
 
     @Override
