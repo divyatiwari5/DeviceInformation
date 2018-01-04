@@ -45,7 +45,7 @@ import java.util.TimeZone;
 
 public class MainActivity extends AppCompatActivity {
 
-    Button btnsubmit;
+    Button btnsubmit, btnappinfo;
     String IMEI, IMSI, kernel, country, lang, androidVersion;
     TextView txtinfoview;
 
@@ -186,8 +186,9 @@ public class MainActivity extends AppCompatActivity {
         String serviceName = Context.TELEPHONY_SERVICE;
         TelephonyManager m_telephonyManager = (TelephonyManager) getSystemService(serviceName);
 
-        txtinfoview = (TextView) findViewById(R.id.textSetInformation);
-        btnsubmit = (Button) findViewById(R.id.btnfetch);
+        txtinfoview = findViewById(R.id.textSetInformation);
+        btnsubmit = findViewById(R.id.btnfetch);
+        btnappinfo = findViewById(R.id.btnappinfo);
 
         kernel = System.getProperty("os.version");
         Toast.makeText(this, "Kernel version:" + kernel, Toast.LENGTH_SHORT).show();
@@ -223,6 +224,14 @@ public class MainActivity extends AppCompatActivity {
                 }
                 txtinfoview.setText(info.toString());
 
+            }
+        });
+
+        btnappinfo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(getApplicationContext(), AppList.class);
+                startActivity(i);
             }
         });
 
@@ -351,7 +360,6 @@ public class MainActivity extends AppCompatActivity {
         TelephonyManager tel = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         WifiManager wm = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
         WifiInfo wInfo = wm.getConnectionInfo();
-
 
         String networkOperator = tel.getNetworkOperator();
         int mcc = 0, mnc = 0;
