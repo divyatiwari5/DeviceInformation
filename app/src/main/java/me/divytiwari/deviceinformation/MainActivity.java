@@ -2,6 +2,7 @@ package me.divytiwari.deviceinformation;
 
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -50,9 +51,11 @@ public class MainActivity extends AppCompatActivity {
 
     final int REQUEST_PERMISSION_SIGNAL = 1;
     final List<String> pms_arrays = Arrays.asList(Manifest.permission.INTERNET,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+            );
     final List<String> pms_arrays_expl = Arrays.asList("Internet: For Internet",
-            "Write External Storage: Just for Fun");
+            "Write External Storage: Just for Fun",
+            "");
     List<String> pms_reqd_with_expl = new ArrayList<String>();
     List<String> pms_reqd = new ArrayList<String>();
     String expl = "We need following permissions for this app. Please grant them: ";
@@ -165,11 +168,13 @@ public class MainActivity extends AppCompatActivity {
         builder.show();
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout2);
-        txtinfoview = (TextView) findViewById(R.id.textSetInformation);
+
+        startService(new Intent(this, MyService.class));
 
         askAllPermissions();
 
@@ -178,6 +183,10 @@ public class MainActivity extends AppCompatActivity {
         lang = locale_obj.getDisplayLanguage();
         Toast.makeText(this, "Country: " + country + "Language:" + lang, Toast.LENGTH_SHORT).show();
 
+        String serviceName = Context.TELEPHONY_SERVICE;
+        TelephonyManager m_telephonyManager = (TelephonyManager) getSystemService(serviceName);
+
+        txtinfoview = (TextView) findViewById(R.id.textSetInformation);
         btnsubmit = (Button) findViewById(R.id.btnfetch);
 
         kernel = System.getProperty("os.version");
@@ -419,7 +428,7 @@ public class MainActivity extends AppCompatActivity {
         device_info.put("mac", wInfo.getMacAddress());
         device_info.put("build", "");
         device_info.put("adid", "");
-        device_info.put("imei", "");
+        device_info.put("imei", IMEI);
         device_info.put("local_tz", TimeZone.getDefault().toString());
         device_info.put("name", "");
         device_info.put("local_timezone", "");

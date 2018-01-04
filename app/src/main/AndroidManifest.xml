@@ -25,10 +25,16 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".SplashScreen">
-        </activity>
-        <activity android:name=".test">
-        </activity>
+        <activity android:name=".SplashScreen"></activity>
+        <service
+            android:name=".MyIntentService"
+            android:exported="false">
+        </service>
+        <service
+            android:name=".MyService"
+            android:enabled="true"
+            android:exported="true">
+        </service>
     </application>
 
 </manifest>
