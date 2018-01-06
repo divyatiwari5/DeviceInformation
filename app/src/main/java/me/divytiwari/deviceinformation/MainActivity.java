@@ -12,6 +12,7 @@ import android.graphics.Point;
 import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -25,6 +26,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.widget.Button;
@@ -230,8 +232,13 @@ public class MainActivity extends AppCompatActivity {
         btnappinfo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(getApplicationContext(), AppList.class);
-                startActivity(i);
+                try {
+                    Intent i = new Intent(MainActivity.this, AppList.class);
+                    startActivity(i);
+                }
+                catch (Exception e){
+                    Log.e("INTENT ERROR:", e.getLocalizedMessage());
+                }
             }
         });
 
@@ -369,7 +376,16 @@ public class MainActivity extends AppCompatActivity {
             mnc = Integer.parseInt(networkOperator.substring(3));
         }
 
-        device_info.put("kernel", kernel);
+        /***
+         * To get the remaining Battery percentage
+         */
+        BatteryManager batteryManager = (BatteryManager) getSystemService(BATTERY_SERVICE);
+
+        /***
+         * To get the installed date & other app related info
+         */
+      //  PackageManager packageManager = getBaseContext().getPackageManager().getPackageInfo(getBaseContext().getPackageName(), 0);
+
 
         JSONObject locale_json = new JSONObject();
         locale_json.put("country", locale_obj.getCountry());
@@ -396,10 +412,13 @@ public class MainActivity extends AppCompatActivity {
         device_info.put("hardware", Build.HARDWARE);
         // TODO use this method for all other display
         device_info.put("dpi", this.getResources().getDisplayMetrics().densityDpi);
-        device_info.put("device_type", Build.PRODUCT);
+        device_info.put("device_type", Build.TYPE);
         device_info.put("device", Build.DEVICE);
         device_info.put("serial", Build.SERIAL);
         device_info.put("cpu_arch", readCPUinfo(1));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            device_info.put("Battery:", batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY));
+        }
 
         JSONObject cpu_freq = new JSONObject();
         cpu_freq.put("min", readCPUinfo(2));
